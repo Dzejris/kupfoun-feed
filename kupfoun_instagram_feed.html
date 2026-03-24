@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kupfoun — Instagram Feed</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #518BFF;
+    --blue-dim: #2a5cd4;
+    --blue-glow: rgba(81,139,255,0.18);
+    --dark: #0a0a0c;
+    --dark2: #111116;
+    --dark3: #18181f;
+    --dark4: #1f1f28;
+    --white: #ffffff;
+    --white70: rgba(255,255,255,0.7);
+    --white40: rgba(255,255,255,0.4);
+    --white15: rgba(255,255,255,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #07070a;
+    font-family: 'Barlow', sans-serif;
+    color: var(--white);
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .page-header h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--blue);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .page-header p {
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* FEED GRID */
+  .feed {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    max-width: 900px;
+    margin: 0 auto 60px;
+  }
+
+  .post {
+    aspect-ratio: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--dark2);
+    transition: transform 0.2s;
+  }
+  .post:hover { transform: scale(1.015); z-index: 2; }
+  .post:hover .post-overlay { opacity: 1; }
+
+  .post-overlay {
+    position: absolute; inset: 0;
+    background: rgba(81,139,255,0.08);
+    border: 1.5px solid var(--blue);
+    opacity: 0; transition: opacity 0.2s;
+    z-index: 10; pointer-events: none;
+  }
+
+  /* PIN BADGE */
+  .pin {
+    position: absolute; top: 8px; right: 8px; z-index: 9;
+    background: var(--blue);
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pin svg { width: 11px; height: 11px; }
+
+  /* CAROUSEL BADGE */
+  .car-badge {
+    position: absolute; top: 8px; left: 8px; z-index: 9;
+    background: rgba(0,0,0,0.7);
+    border: 0.5px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 8px; font-weight: 600;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.8);
+    text-transform: uppercase;
+  }
+
+  /* WATERMARK */
+  .wm {
+    position: absolute; bottom: 9px; left: 10px; z-index: 8;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .wm-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--blue);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; font-weight: 900; color: #fff;
+    font-family: 'Barlow Condensed', sans-serif;
+  }
+  .wm-text {
+    font-size: 8px; font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.05em;
+    text-transform: lowercase;
+  }
+
+  /* NOISE OVERLAY */
+  .noise {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px;
+  }
+
+  /* ===================== POST DESIGNS ===================== */
+
+  /* POST 1 — Hero / Brand intro (PINNED) */
+  .p1 {
+    background: var(--dark);
+  }
+  .p1-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 70% 40%, rgba(81,139,255,0.22) 0%, transparent 65%);
+  }
+  .p1-content {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column;
+    padding: 14px;
+  }
+  .p1-tag {
+    font-size: 8px; font-weight: 700; letter-spacing: 0.15em;
+    color: var(--blue); text-transform: uppercase; margin-bottom: auto;
+  }
+  .p1-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: clamp(22px, 5vw, 32px);
+    line-height: 0.95;
+    color: var(--white);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .p1-title span { color: var(--blue); }
+  .p1-sub {
+    font-size: 8.5px; color: var(--white70); line-height: 1.4;
+    max-width: 80%; margin-bottom: 30px;
+  }
+  .p1-phone {
+    position: absolute; right: -5%; bottom: 15%; z-index: 1;
+    width: 38%; height: 55%;
+    background: var(--dark3);
+    border-radius: 14% / 8%;
+    border: 1.5px solid rgba(81,139,255,0.35);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .p1-screen {
+    width: 84%; height: 88%;
+    background: var(--dark4);
+    border-radius: 10% / 6%;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 4px;
+  }
+  .p1-screen-dot { width: 18%; height: 5%; background: var(--blue); border-radius: 50%; opacity: 0.7; }
+  .p1-screen-line { width: 60%; height: 2px; background: rgba(81,139,255,0.4); border-radius: 1px; }
+  .p1-screen-line2 { width: 40%; height: 2px; background: rgba(81,139,255,0.2); border-radius: 1px; }
+
+  /* POST 2 — Proč Kupfoun? (PINNED carousel) */
+  .p2 { background: var(--dark2); }
+  .p2-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--dark2) 0%, #0d1a35 100%);
+  }
+  .p2-content {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column;
+    padding: 14px 14px 28px;
+  }
+  .p2-eyebrow {
+    font-size: 8px; font-weight: 700; color: var(--blue);
+    letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .p2-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: clamp(18px, 4vw, 26px);
+    text-transform: uppercase; line-height: 1; margin-bottom: 12px;
+  }
+  .p2-list { display: flex; flex-direction: column; gap: 7px; }
+  .p2-item {
+    display: flex; align-items: flex-start; gap: 7px;
+  }
+  .p2-check {
+    width: 12px; height: 12px; flex-shrink: 0;
+    background: var(--blue); border-radius: 3px;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .p2-check svg { width: 7px; height: 7px; }
+  .p2-item-text { font-size: 9px; color: var(--white70); line-height: 1.3; }
+  .p2-item-text strong { color: var(--white); font-weight: 600; display: block; font-size: 9.5px; }
+
+  /* POST 3 — Jak to funguje (PINNED) */
+  .p3 { background: var(--dark); }
+  .p3-content {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 14px;
+  }
+  .p3-steps { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; }
+  .p3-step { display: flex; align-items: center; gap: 8px; }
+  .p3-num {
+    width: 20px; height: 20px; flex-shrink: 0;
+    border: 1.5px solid var(--blue); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px; font-weight: 800; color: var(--blue);
+  }
+  .p3-step-text { font-size: 9.5px; color: var(--white); font-weight: 500; }
+  .p3-step-text span { color: var(--white40); font-weight: 400; display: block; font-size: 8px; }
+  .p3-header {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: clamp(16px, 3.5vw, 22px);
+    text-transform: uppercase; line-height: 1;
+    margin-bottom: 14px;
+  }
+  .p3-line {
+    position: absolute; left: 14px; top: 30%; z-index: 1;
+    width: 2px; height: 35%;
+    background: linear-gradient(to bottom, transparent, var(--blue), transparent);
+  }
+
+  /* POST 4 — iPhone 13 product */
+  .p4 { background: var(--dark); }
+  .p4-accent {
+    position: absolute; top: 0; right: 0; z-index: 1;
+    width: 50%; height: 100%;
+    background: var(--blue);
+    clip-path: polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%);
+  }
+  .p4-content {
+    position: absolute; inset: 0; z-index: 2;
+    padding: 14px; display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .p4-model {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: clamp(28px, 7vw, 42px);
+    text-transform: uppercase; line-height: 0.9;
+    margin-bottom: 8px;
+  }
+  .p4-model span { display: block; font-size: 55%; color: var(--white70); }
+  .p4-price {
+    display: inline-flex; align-items: baseline; gap: 4px;
+    background: var(--dark); border: 1px solid var(--blue);
+    padding: 4px 10px; border-radius: 4px; margin-bottom: 28px;
+  }
+  .p4-price-num { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; color: var(--blue); }
+  .p4-price-label { font-size: 8px; color: var(--white40); }
+  .p4-phone-img {
+    position: absolute; right: 5%; top: 10%; z-index: 3;
+    width: 32%; height: 70%;
+    background: var(--dark);
+    border-radius: 18% / 10%;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .p4-phone-inner {
+    width: 80%; height: 85%;
+    background: #101018; border-radius: 14% / 8%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  }
+  .p4-dot { width: 12px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; }
+  .p4-screen-content { width: 75%; height: 40%; background: var(--blue); border-radius: 3px; opacity: 0.3; margin: 4px 0; }
+  .p4-camera { width: 8px; height: 8px; border-radius: 50%; background: #222; border: 1px solid #333; }
+
+  /* POST 5 — Srovnání modelů carousel */
+  .p5 { background: var(--dark2); }
+  .p5-content {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column; padding: 14px 14px 28px;
+  }
+  .p5-eyebrow { font-size: 8px; font-weight: 700; color: var(--blue); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 6px; }
+  .p5-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: clamp(18px, 4.5vw, 28px);
+    text-transform: uppercase; line-height: 0.95; margin-bottom: 14px;
+  }
+  .p5-models { display: flex; flex-direction: column; gap: 6px; }
+  .p5-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 10px; border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 5px; background: rgba(255,255,255,0.03);
+    transition: background 0.2s;
+  }
+  .p5-row.active { background: var(--blue-glow); border-color: rgba(81,139,255,0.3); }
+  .p5-row-name { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; }
+  .p5-row-price { font-size: 9px; color: var(--blue); font-weight: 600; }
+  .p5-row-badge { font-size: 7px; background: var(--blue); color: #fff; padding: 1px 5px; border-radius: 3px; font-weight: 700; }
+
+  /* POST 6 — Recenze zákazníka */
+  .p6 { background: var(--dark); }
+  .p6-accent {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 35%; z-index: 1;
+    background: var(--dark3);
+  }
+  .p6-content {
+    position: absolute; inset: 0; z-index: 2;
+    padding: 16px; display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  }
+  .p6-quote-mark {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 60px; font-weight: 900; color: var(--blue);
+    line-height: 0.6; margin-bottom: 8px; opacity: 0.7;
+  }
+  .p6-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: clamp(13px, 3.2vw, 18px);
+    line-height: 1.1; margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+  .p6-author { display: flex; align-items: center; gap: 7px; }
+  .p6-avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--blue); display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: #fff;
+    font-family: 'Barlow Condensed', sans-serif;
+  }
+  .p6-author-name { font-size: 9px; font-weight: 600; color: var(--white70); }
+  .p6-stars { display: flex; gap: 2px; }
+  .p6-star { width: 8px; height: 8px; background: var(--blue); clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); }
+
+  /* POST 7 — Tip / edukace */
+  .p7 { background: var(--dark2); }
+  .p7-stripe {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 4px; z-index: 3;
+    background: var(--blue);
+  }
+  .p7-content {
+    position: absolute; inset: 0; z-index: 2;
+    padding: 14px 14px 28px 20px;
+    display: flex; flex-direction: column;
+  }
+  .p7-eyebrow {
+    font-size: 8px; font-weight: 700; color: var(--blue);
+    letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .p7-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: clamp(16px, 3.8vw, 24px);
+    text-transform: uppercase; line-height: 1; margin-bottom: 12px;
+  }
+  .p7-checks { display: flex; flex-direction: column; gap: 7px; }
+  .p7-check-item { display: flex; gap: 7px; align-items: flex-start; }
+  .p7-bullet {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--blue); flex-shrink: 0; margin-top: 3px;
+  }
+  .p7-item-label { font-size: 9px; color: var(--white); font-weight: 600; }
+  .p7-item-sub { font-size: 8px; color: var(--white40); }
+
+  /* POST 8 — Za kulisami */
+  .p8 { background: var(--dark); }
+  .p8-grid {
+    position: absolute; inset: 0; z-index: 1;
+    display: grid; grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr; gap: 2px;
+  }
+  .p8-cell { background: var(--dark3); display: flex; align-items: center; justify-content: center; }
+  .p8-cell:nth-child(1) { background: var(--dark4); }
+  .p8-cell:nth-child(2) { background: var(--blue-glow); border: 0.5px solid rgba(81,139,255,0.2); }
+  .p8-cell:nth-child(3) { background: var(--dark2); }
+  .p8-cell:nth-child(4) { background: var(--dark3); }
+  .p8-icon { width: 28px; height: 28px; border-radius: 6px; background: var(--blue); opacity: 0.25; }
+  .p8-content {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 14px;
+    background: linear-gradient(to top, rgba(10,10,12,0.95) 0%, rgba(10,10,12,0.3) 55%, transparent 100%);
+  }
+  .p8-label { font-size: 8px; font-weight: 700; color: var(--blue); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 4px; }
+  .p8-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: clamp(16px, 4vw, 24px);
+    text-transform: uppercase; line-height: 1; margin-bottom: 28px;
+  }
+
+  /* POST 9 — CTA */
+  .p9 { background: var(--blue); }
+  .p9-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 70%, rgba(0,0,0,0.4) 0%, transparent 60%);
+  }
+  .p9-content {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 14px;
+  }
+  .p9-eyebrow { font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.6); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 8px; }
+  .p9-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: clamp(26px, 6.5vw, 42px);
+    text-transform: uppercase; line-height: 0.9;
+    margin-bottom: 12px;
+  }
+  .p9-title em { font-style: normal; color: var(--dark); }
+  .p9-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--dark); color: var(--white);
+    padding: 7px 12px; border-radius: 5px;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; width: fit-content; margin-bottom: 28px;
+  }
+  .p9-btn-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+  .p9-url { font-size: 9px; color: rgba(255,255,255,0.5); }
+
+  /* ===================== DETAIL PANEL ===================== */
+  .detail {
+    max-width: 900px; margin: 0 auto;
+    background: var(--dark2);
+    border: 0.5px solid rgba(81,139,255,0.2);
+    border-radius: 12px; overflow: hidden;
+    display: none;
+  }
+  .detail.visible { display: block; }
+  .detail-header {
+    padding: 14px 20px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  .detail-label { font-size: 11px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.1em; }
+  .detail-badges { display: flex; gap: 6px; }
+  .badge {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 4px;
+  }
+  .badge-pin { background: rgba(81,139,255,0.18); color: var(--blue); border: 0.5px solid rgba(81,139,255,0.3); }
+  .badge-car { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); border: 0.5px solid rgba(255,255,255,0.1); }
+  .detail-body { display: grid; grid-template-columns: 180px 1fr; gap: 20px; padding: 20px; }
+  .detail-preview {
+    aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative;
+    border: 0.5px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .detail-info { }
+  .detail-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 800; text-transform: uppercase; line-height: 1.1; margin-bottom: 8px; }
+  .detail-caption { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.65; margin-bottom: 10px; }
+  .detail-hashtags { font-size: 11px; color: var(--blue); line-height: 1.8; opacity: 0.85; margin-bottom: 12px; }
+  .detail-carousel { font-size: 11px; color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; line-height: 1.6; }
+  .detail-carousel strong { color: rgba(255,255,255,0.7); }
+  .gen-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 6px;
+    background: rgba(81,139,255,0.12); border: 0.5px solid rgba(81,139,255,0.35);
+    color: var(--blue); font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; cursor: pointer; transition: background 0.15s;
+  }
+  .gen-btn:hover { background: rgba(81,139,255,0.22); }
+
+  /* LEGEND */
+  .legend {
+    max-width: 900px; margin: 0 auto 40px;
+    display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(255,255,255,0.45); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Kupfoun.cz — Instagram Feed</h1>
+  <p>Klikni na příspěvek pro detail · caption · hashtagy</p>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#518BFF;"></div> Pinnovaný příspěvek</div>
+  <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.2);"></div> Carousel</div>
+</div>
+
+<div class="feed" id="feed">
+
+  <!-- POST 1 — Hero -->
+  <div class="post p1" onclick="showDetail(0)">
+    <div class="p1-bg"></div>
+    <div class="noise"></div>
+    <div class="p1-phone">
+      <div class="p1-screen">
+        <div class="p1-screen-dot"></div>
+        <div class="p1-screen-line"></div>
+        <div class="p1-screen-line2"></div>
+      </div>
+    </div>
+    <div class="p1-content">
+      <div class="p1-tag">kupfoun.cz</div>
+      <div class="p1-title">Prémioví<br><span>iPhony.</span><br>Bez přeplatku.</div>
+      <div class="p1-sub">Použité iPhony v top stavu. Ověřená kvalita, férová cena.</div>
+    </div>
+    <div class="pin"><svg viewBox="0 0 12 12" fill="white"><path d="M8 1.5C8 1.5 10 3 10 5C10 6.5 8.5 7 7.5 6.8L5 10L4 9L6.2 6.5C5.8 5.8 5 4.5 6 3L8 1.5Z"/></svg></div>
+    <div class="wm"><div class="wm-dot">K</div><div class="wm-text">kupfoun.cz</div></div>
+    <div class="post-overlay"></div>
+  </div>
+
+  <!-- POST 2 — Proč Kupfoun carousel -->
+  <div class="post p2" onclick="showDetail(1)">
+    <div class="p2-bg"></div>
+    <div class="noise"></div>
+    <div class="p2-content">
+      <div class="p2-eyebrow">proč my?</div>
+      <div class="p2-title">5 důvodů<br>proč Kupfoun</div>
+      <div class="p2-list">
+        <div class="p2-item">
+          <div class="p2-check"><svg viewBox="0 0 8 8" fill="white"><path d="M1 4l2 2 4-4"/><polyline points="1,4 3,6 7,2" stroke="white" stroke-width="1.5" fill="none"/></svg></div>
+          <div class="p2-item-text"><strong>Ověřená kvalita</strong>každý kus prochází kontrolou</div>
+        </div>
+        <div class="p2-item">
+          <div class="p2-check"><svg viewBox="0 0 8 8" fill="white"><polyline points="1,4 3,6 7,2" stroke="white" stroke-width="1.5" fill="none"/></svg></div>
+          <div class="p2-item-text"><strong>Záruka 12 měsíců</strong>servis i po nákupu</div>
+        </div>
+        <div class="p2-item">
+          <div class="p2-check"><svg viewBox="0 0 8 8" fill="white"><polyline points="1,4 3,6 7,2" stroke="white" stroke-width="1.5" fill="none"/></svg></div>
+          <div class="p2-item-text"><strong>Férová cena</strong>bez zbytečného přeplatku</div>
+        </div>
+      </div>
+    </div>
+    <div class="pin"><svg viewBox="0 0 12 12" fill="white"><path d="M8 1.5C8 1.5 10 3 10 5C10 6.5 8.5 7 7.5 6.8L5 10L4 9L6.2 6.5C5.8 5.8 5 4.5 6 3L8 1.5Z"/></svg></div>
+    <div class="car-badge">Carousel</div>
+    <div class="wm"><div class="wm-dot">K</div><div class="wm-text">kupfoun.cz</div></div>
+    <div class="post-overlay"></div>
+  </div>
+
+  <!-- POST 3 — Jak to funguje -->
+  <div class="post p3" onclick="showDetail(2)">
+    <div class="noise"></div>
+    <div class="p3-line"></div>
+    <div class="p3-content">
+      <div class="p3-header">Jak to<br>funguje?</div>
+      <div class="p3-steps">
+        <div class="p3-step">
+          <div class="p3-num">1</div>
+          <div class="p3-step-text">Vyber model<span>na kupfoun.cz</span></div>
+        </div>
+        <div class="p3-step">
+          <div class="p3-num">2</div>
+          <div class="p3-step-text">Objednáš online<span>jednoduše, bezpečně</span></div>
+        </div>
+        <div class="p3-step">
+          <div class="p3-num">3</div>
+          <div class="p3-step-text">Dorazí do 24h<span>v perfektním stavu</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pin"><svg viewBox="0 0 12 12" fill="white"><path d="M8 1.5C8 1.5 10 3 10 5C10 6.5 8.5 7 7.5 6.8L5 10L4 9L6.2 6.5C5.8 5.8 5 4.5 6 3L8 1.5Z"/></svg></div>
+    <div class="wm"><div class="wm-dot">K</div><div class="wm-text">kupfoun.cz</div></div>
+    <div class="post-overlay"></div>
+  </div>
+
+  <!-- POST 4 — iPhone 13 product -->
+  <div class="post p4" onclick="showDetail(3)">
+    <div class="p4-accent"></div>
+    <div class="noise"></div>
+    <div class="p4-phone-img">
+      <div class="p4-phone-inner">
+        <div class="p4-camera"></div>
+        <div class="p4-screen-content"></div>
+        <div class="p4-dot"></div>
+      </div>
+    </div>
+    <div class="p4-content">
+      <div class="p4-model">iPhone<span>model</span>13</div>
+      <div class="p4-price">
+        <span class="p4-price-num">od 7 990 Kč</span>
+        <span class="p4-price-label">ověřený stav</span>
+      </div>
+    </div>
+    <div class="wm"><div class="wm-dot">K</div><div class="wm-text">kupfoun.cz</div></div>
+    <div class="post-overlay"></div>
+  </div>
+
+  <!-- POST 5 — Srovnání carousel -->
+  <div class="post p5" onclick="showDetail(4)">
+    <div class="noise"></div>
+    <div class="p5-content">
+      <div class="p5-eyebrow">srovnání modelů</div>
+      <div class="p5-title">Který iPhone<br>je pro tebe?</div>
+      <div class="p5-models">
+        <div class="p5-row">
+          <span class="p5-row-name">iPhone 12</span>
+          <span class="p5-row-price">od 5 990 Kč</span>
+        </div>
+        <div class="p5-row active">
+          <span class="p5-row-name">iPhone 13</span>
+          <span class="p5-row-price">od 7 990 Kč</span>
+          <span class="p5-row-badge">Top</span>
+        </div>
+        <div class="p5-row">
+          <span class="p5-row-name">iPhone 14</span>
+          <span class="p5-row-price">od 11 990 Kč</span>
+        </div>
+      </div>
+    </div>
+    <div class="car-badge">Carousel</div>
+    <div class="wm"><div class="wm-dot">K</div><div class="wm-text">kupfoun.cz</div></div>
+    <div class="post-overlay"></div>
+  </div>
+
+  <!-- POST 6 — Recenze -->
+  <div class="post p6" onclick="showDetail(5)">
+    <div class="p6-accent"></div>
+    <div class="noise"></div>
+    <div class="p6-content">
+      <div class="p6-quote-mark">"</div>
+      <div class="p6-text">Foun dorazil<br>druhý den,<br>jak nový.</div>
+      <div class="p6-stars">
+        <div class="p6-star"></div><div class="p6-star"></div><div class="p6-star"></div><div class="p6-star"></div><div class="p6-star"></div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="p6-author">
+        <div class="p6-avatar">M</div>
+        <div class="p6-author-name">Marek, Brno</div>
+      </div>
+    </div>
+    <div class="wm"><div class="wm-dot">K</div><div class="wm-text">kupfoun.cz</div></div>
+    <div class="post-overlay"></div>
+  </div>
+
+  <!-- POST 7 — Tip -->
+  <div class="post p7" onclick="showDetail(6)">
+    <div class="p7-stripe"></div>
+    <div class="noise"></div>
+    <div class="p7-content">
+      <div class="p7-eyebrow">tip před koupí</div>
+      <div class="p7-title">Jak poznat dobrý použitý iPhone?</div>
+      <div class="p7-checks">
+        <div class="p7-check-item">
+          <div class="p7-bullet"></div>
+          <div><div class="p7-item-label">Kapacita baterie</div><div class="p7-item-sub">min. 85% zdraví</div></div>
+        </div>
+        <div class="p7-check-item">
+          <div class="p7-bullet"></div>
+          <div><div class="p7-item-label">Face ID / Touch ID</div><div class="p7-item-sub">musí fungovat</div></div>
+        </div>
+        <div class="p7-check-item">
+          <div class="p7-bullet"></div>
+          <div><div class="p7-item-label">Čistý IMEI</div><div class="p7-item-sub">bez blokace</div></div>
+        </div>
+        <div class="p7-check-item">
+          <div class="p7-bullet"></div>
+          <div><div class="p7-item-label">Stav displeje</div><div class="p7-item-sub">žádné dead pixely</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="wm"><div class="wm-dot">K</div><div class="wm-text">kupfoun.cz</div></div>
+    <div class="post-overlay"></div>
+  </div>
+
+  <!-- POST 8 — Za kulisami -->
+  <div class="post p8" onclick="showDetail(7)">
+    <div class="p8-grid">
+      <div class="p8-cell"><div class="p8-icon"></div></div>
+      <div class="p8-cell"><div class="p8-icon" style="opacity:0.5;background:#fff;width:20px;height:20px;border-radius:50%;"></div></div>
+      <div class="p8-cell"><div class="p8-icon" style="border-radius:50%;width:20px;height:20px;"></div></div>
+      <div class="p8-cell"></div>
+    </div>
+    <div class="p8-content">
+      <div class="p8-label">za kulisami</div>
+      <div class="p8-title">Každý foun<br>prochází<br>naší rukou</div>
+    </div>
+    <div class="wm"><div class="wm-dot">K</div><div class="wm-text">kupfoun.cz</div></div>
+    <div class="post-overlay"></div>
+  </div>
+
+  <!-- POST 9 — CTA -->
+  <div class="post p9" onclick="showDetail(8)">
+    <div class="p9-bg"></div>
+    <div class="noise"></div>
+    <div class="p9-content">
+      <div class="p9-eyebrow">neztrácej čas</div>
+      <div class="p9-title">Tvůj<br><em>foun</em><br>tě čeká.</div>
+      <div class="p9-btn"><div class="p9-btn-dot"></div>Odkaz v biu ↑</div>
+      <div class="p9-url">kupfoun.cz</div>
+    </div>
+    <div class="wm"><div class="wm-dot">K</div><div class="wm-text">kupfoun.cz</div></div>
+    <div class="post-overlay"></div>
+  </div>
+
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail" id="detail">
+  <div class="detail-header">
+    <span class="detail-label" id="d-label">—</span>
+    <div class="detail-badges" id="d-badges"></div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-preview" id="d-preview"></div>
+    <div class="detail-info">
+      <div class="detail-title" id="d-title"></div>
+      <div class="detail-caption" id="d-caption"></div>
+      <div class="detail-hashtags" id="d-hashtags"></div>
+      <div class="detail-carousel" id="d-carousel" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const data = [
+  {
+    label: 'Úvodní příspěvek — brand hero',
+    pinned: true, carousel: false,
+    title: 'PRÉMIOVÍ IPHONY. BEZ PŘEPLATKU.',
+    caption: 'Vítej na @kupfoun.cz — místo, kde seženěš top iPhone v perfektním stavu a za fér cenu. Žádný bullshit, jen kvalita, kterou cítíš od prvního kliknutí. 🏆\n\nOdkaz v biu 👆',
+    hashtags: '#kupfoun #iphone #použitýiphone #apple #telefon #ušetři #czechbrand #smartphone',
+    slides: null
+  },
+  {
+    label: 'Proč Kupfoun? — carousel (5 snímků)',
+    pinned: true, carousel: true,
+    title: '5 DŮVODŮ, PROČ SI KOUPIT FOUN U NÁS',
+    caption: 'Stydíme se říct, že jsme nejlepší? Ne. Tady je 5 poctivých důvodů, proč nás zákazníci doporučují dál. Přejeď pro víc ✌️',
+    hashtags: '#kupfoun #iphone #ověřenákvalita #prémiovýtelefon #apple #záruka #českýeshop',
+    slides: ['Snímek 1: Ověřená kvalita — každý kus prochází naší kontrolou', 'Snímek 2: Záruka 12 měsíců — servis i po nákupu', 'Snímek 3: Doprava do 24h — bleskové expedice', 'Snímek 4: Férová cena — bez zbytečného přeplatku', 'Snímek 5: Osobní přístup — jsme tu pro tebe']
+  },
+  {
+    label: 'Jak to funguje — 3 kroky (pinned)',
+    pinned: true, carousel: false,
+    title: 'OBJEDNEJ, DOSTANEŠ. TAK JEDNODUCHÉ.',
+    caption: 'Žádná složitost, žádné překvapení. Tři kroky a foun je tvůj 👇\n\n1️⃣ Vyber model na kupfoun.cz\n2️⃣ Objednáš online — bezpečně\n3️⃣ Dorazí do 24h v top stavu\n\nLinktr.ee v biu 👆',
+    hashtags: '#kupfoun #jaktofunguje #nakupujbezrizika #iphone #eshop #bleskováexpedice #apple',
+    slides: null
+  },
+  {
+    label: 'Produktový příspěvek — iPhone 13',
+    pinned: false, carousel: false,
+    title: 'iPhone 13 — NOVÝ LEVEL ZA STARÝ PRICE',
+    caption: 'A15 Bionic, 5G, OLED Super Retina XDR. A cena? Od 7 990 Kč v top stavu. Červená, zelená, polnoc — vyber si svůj 🤙\n\nOdkaz v biu 👆 nebo zapiš kupfoun.cz',
+    hashtags: '#iphone13 #kupfoun #použitýiphone #apple #iphone #a15bionic #5G #topstav #smartphone',
+    slides: null
+  },
+  {
+    label: 'Srovnání iPhone 12/13/14 — carousel',
+    pinned: false, carousel: true,
+    title: 'iPhone 12 vs 13 vs 14 — KTERÝ JE PRO TEBE?',
+    caption: 'Nevíte, který model vybrat? Udělali jsme srovnání za vás. Přejeď a zjisti rozdíly v ceně i výkonu 👇 Šetřete tam, kde to dává smysl.',
+    hashtags: '#iphone12 #iphone13 #iphone14 #kupfoun #výběriphone #apple #porovnání #použitý',
+    slides: ['Snímek 1: iPhone 12 — od 5 990 Kč · základní model, výborná cena', 'Snímek 2: iPhone 13 — od 7 990 Kč · náš Top pick, nejlepší poměr cena/výkon', 'Snímek 3: iPhone 14 — od 11 990 Kč · pro náročné, Dynamic Island']
+  },
+  {
+    label: 'Zákaznická recenze',
+    pinned: false, carousel: false,
+    title: '"FOUN DORAZIL DRUHÝ DEN, JAK NOVÝ."',
+    caption: 'Tohle nám napsal Marek z Brna po svém prvním nákupu. A přesně proto to děláme 🙏\n\nNapiš nám do komentářů svůj zážitek — rádi čteme!\n\n⭐⭐⭐⭐⭐',
+    hashtags: '#kupfoun #recenze #spokojenýzákazník #iphone #ověřeno #review #realreview #apple',
+    slides: null
+  },
+  {
+    label: 'Edukační tip — jak poznat dobrý iPhone',
+    pinned: false, carousel: false,
+    title: 'JAK POZNAT DOBRÝ POUŽITÝ iPHONE?',
+    caption: 'Na co se dívat před koupí? 🔍\n\n✅ Kapacita baterie (min. 85%)\n✅ Face ID / Touch ID funguje\n✅ Čistý IMEI bez blokace\n✅ Displej bez dead pixelů\n\nU nás tohle kontrolujeme za tebe — každý kus. Žádné starosti.',
+    hashtags: '#tip #iphone #použitýiphone #jakzkontrolovat #kupfoun #nakupujchytře #apple #smarthint',
+    slides: null
+  },
+  {
+    label: 'Za kulisami — kontrola kvality',
+    pinned: false, carousel: false,
+    title: 'KAŽDÝ FOUN PROCHÁZÍ NAŠÍ RUKOU',
+    caption: 'Před tím, než dorazí k tobě, projde každý iPhone naší kontrolou. Baterie, Face ID, displej, IMEI — žádné kompromisy 👌\n\nProtože věříme, že kvalita se cítí. A naši zákazníci to vědí.',
+    hashtags: '#zakulisami #kupfoun #kontrolakvalita #iphone #ověřeno #handchecked #quality #apple',
+    slides: null
+  },
+  {
+    label: 'CTA — nakup teď',
+    pinned: false, carousel: false,
+    title: 'TVŮJ FOUN TĚ ČEKÁ. DNESKA.',
+    caption: 'Stovky spokojených zákazníků si už vybraly. Přijde řada na tebe? 🚀\n\nPřejdi na kupfoun.cz nebo klikni na odkaz v biu 👆\n\nDneska. Ne zítra.',
+    hashtags: '#kupfoun #iphone #nakupteď #bleskováexpedice #apple #použitýiphone #akcenow #czecheshop',
+    slides: null
+  }
+];
+
+const postEls = document.querySelectorAll('.post');
+
+function showDetail(i) {
+  const d = data[i];
+  postEls.forEach((el,j) => el.style.outline = j===i ? '2px solid #518BFF' : '');
+
+  document.getElementById('d-label').textContent = d.label;
+
+  const badges = document.getElementById('d-badges');
+  badges.innerHTML = '';
+  if (d.pinned) { const b=document.createElement('span'); b.className='badge badge-pin'; b.textContent='Připnout'; badges.appendChild(b); }
+  if (d.carousel) { const b=document.createElement('span'); b.className='badge badge-car'; b.textContent='Carousel'; badges.appendChild(b); }
+
+  const preview = document.getElementById('d-preview');
+  preview.innerHTML = '';
+  const clone = postEls[i].cloneNode(true);
+  clone.style.cssText = 'width:100%;height:100%;cursor:default;transform:none;';
+  clone.onclick = null;
+  preview.appendChild(clone);
+
+  document.getElementById('d-title').textContent = d.title;
+  document.getElementById('d-caption').innerHTML = d.caption.replace(/\n/g,'<br>');
+  document.getElementById('d-hashtags').textContent = d.hashtags;
+
+  const carousel = document.getElementById('d-carousel');
+  if (d.slides) {
+    carousel.style.display = 'block';
+    carousel.innerHTML = '<strong>Snímky carouselu:</strong><br>' + d.slides.join('<br>');
+  } else {
+    carousel.style.display = 'none';
+  }
+
+  const detail = document.getElementById('detail');
+  detail.classList.add('visible');
+  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+</script>
+</body>
+</html>
